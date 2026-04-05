@@ -2,105 +2,42 @@ import React from 'react';
 
 interface StatusBarProps {
   mode: 'working' | 'resting';
-  sessionCount: number;
   totalRests: number;
-  notificationPermission: NotificationPermission | 'unsupported';
 }
 
-export const StatusBar: React.FC<StatusBarProps> = ({ mode, sessionCount, totalRests, notificationPermission }) => {
-  const dotColor = mode === 'resting' ? 'var(--green-soft)' : 'var(--purple-glow)';
+
+export const StatusBar: React.FC<StatusBarProps> = ({ mode, totalRests }) => {
+  const dotColor = mode === 'resting' ? 'var(--accent-sand)' : 'var(--accent-sage)';
 
   return (
     <div
       className="flex items-center justify-between w-full px-6 py-3"
       style={{
-        background: 'rgba(30, 24, 64, 0.6)',
+        background: 'rgba(37, 42, 43, 0.7)',
         backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(124, 58, 237, 0.12)',
+        borderBottom: '1px solid var(--border-subtle)',
       }}
     >
-      {/* Logo */}
-      <div className="flex items-center gap-2">
-        <span className="text-lg">👁️</span>
-        <span
-          style={{
-            fontFamily: "'Space Mono', monospace",
-            color: 'var(--purple-light)',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            letterSpacing: '0.05em',
-          }}
-        >
-          RestYoEyes
-        </span>
+      <div style={{ opacity: 0.88 }}>
+        <img src="/logo.png" alt="RestYoEyes" style={{ width: 32, height: 32, objectFit: 'contain' }} />
       </div>
 
-      {/* Center dot + mode */}
       <div className="flex items-center gap-2">
         <span
-          style={{
-            width: 7,
-            height: 7,
-            borderRadius: '50%',
-            background: dotColor,
-            display: 'inline-block',
-            boxShadow: `0 0 8px ${dotColor}`,
-            animation: 'pulseGlow 2s ease-in-out infinite',
-          }}
+          className="ambient-breathe"
+          style={{ width: 6, height: 6, borderRadius: '50%', background: dotColor, display: 'inline-block' }}
         />
-        <span
-          style={{
-            fontSize: '0.75rem',
-            color: 'var(--text-secondary)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-          }}
-        >
-          {mode === 'resting' ? 'Resting' : 'Focusing'}
+        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', letterSpacing: '0.06em', fontWeight: 400 }}>
+          {mode === 'resting' ? 'resting' : 'focusing'}
         </span>
       </div>
 
-      {/* Session count + notification badge */}
-      <div className="flex items-center gap-3">
-        <div className="flex flex-col items-end">
-          {sessionCount > 0 && (
-            <span
-              style={{
-                fontSize: '0.65rem',
-                color: 'var(--text-muted)',
-                opacity: 0.8,
-              }}
-            >
-              Session: {sessionCount}
-            </span>
-          )}
-          <span
-            style={{
-              fontSize: '0.72rem',
-              color: 'var(--purple-light)',
-              background: 'rgba(124, 58, 237, 0.1)',
-              border: '1px solid rgba(124, 58, 237, 0.2)',
-              borderRadius: '999px',
-              padding: '1px 10px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Total Rests: {totalRests}
-          </span>
-        </div>
-        <span
-          title={
-            notificationPermission === 'granted'
-              ? 'Notifications enabled'
-              : notificationPermission === 'denied'
-              ? 'Notifications blocked — please allow in browser settings'
-              : notificationPermission === 'unsupported'
-              ? 'Notifications not supported'
-              : 'Notifications not yet granted'
-          }
-          style={{ fontSize: '0.9rem', cursor: 'default' }}
-        >
-          {notificationPermission === 'granted' ? '🔔' : '🔕'}
+      <div className="flex flex-col items-end">
+        <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)', letterSpacing: '0.04em', fontWeight: 300 }}>
+          total rests today
+        </span>
+        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.2 }}>
+          {totalRests}
         </span>
       </div>
     </div>

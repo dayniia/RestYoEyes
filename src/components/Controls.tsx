@@ -8,102 +8,68 @@ interface ControlsProps {
   onSkip: () => void;
 }
 
-export const Controls: React.FC<ControlsProps> = ({
-  isRunning,
-  onStart,
-  onPause,
-  onReset,
-  onSkip,
-}) => {
+export const Controls: React.FC<ControlsProps> = ({ isRunning, onStart, onPause, onReset, onSkip }) => {
+  const secondaryStyle: React.CSSProperties = {
+    width: 42,
+    height: 42,
+    borderRadius: '50%',
+    background: 'rgba(232, 226, 217, 0.04)',
+    border: '1px solid var(--border-subtle)',
+    color: 'var(--text-muted)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    fontSize: '1rem',
+  };
+
+  const onSecondaryEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.color = 'var(--text-secondary)';
+    e.currentTarget.style.borderColor = 'rgba(232, 226, 217, 0.14)';
+  };
+  const onSecondaryLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.color = 'var(--text-muted)';
+    e.currentTarget.style.borderColor = 'var(--border-subtle)';
+  };
+
   return (
-    <div className="flex items-center gap-4 mt-8">
-      {/* Reset */}
-      <button
-        onClick={onReset}
-        title="Reset"
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: '50%',
-          background: 'rgba(124, 58, 237, 0.12)',
-          border: '1px solid rgba(124, 58, 237, 0.25)',
-          color: 'var(--text-muted)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          fontSize: '1rem',
-        }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
-          (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(124, 58, 237, 0.5)';
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)';
-          (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(124, 58, 237, 0.25)';
-        }}
-      >
+    <div className="flex items-center gap-5 mt-8">
+      <button onClick={onReset} title="Reset" style={secondaryStyle}
+        onMouseEnter={onSecondaryEnter} onMouseLeave={onSecondaryLeave}>
         ↺
       </button>
 
-      {/* Main Start/Pause */}
       <button
         onClick={isRunning ? onPause : onStart}
         style={{
-          width: 72,
-          height: 72,
+          width: 68,
+          height: 68,
           borderRadius: '50%',
-          background: 'linear-gradient(135deg, #7c3aed, #5b21b6)',
-          border: 'none',
-          color: '#fff',
+          background: 'var(--bg-raised)',
+          border: '1px solid rgba(232, 226, 217, 0.1)',
+          color: 'var(--text-primary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          fontSize: '1.5rem',
-          boxShadow: '0 0 24px rgba(124, 58, 237, 0.45)',
-          transition: 'all 0.2s ease',
+          fontSize: '1.25rem',
+          transition: 'all 0.25s ease',
         }}
         onMouseEnter={e => {
-          (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.07)';
-          (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 36px rgba(124, 58, 237, 0.65)';
+          e.currentTarget.style.transform = 'scale(1.05)';
+          e.currentTarget.style.borderColor = 'rgba(232, 226, 217, 0.18)';
         }}
         onMouseLeave={e => {
-          (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-          (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 24px rgba(124, 58, 237, 0.45)';
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.borderColor = 'rgba(232, 226, 217, 0.1)';
         }}
       >
         {isRunning ? '⏸' : '▶'}
       </button>
 
-      {/* Skip */}
-      <button
-        onClick={onSkip}
-        title="Skip"
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: '50%',
-          background: 'rgba(124, 58, 237, 0.12)',
-          border: '1px solid rgba(124, 58, 237, 0.25)',
-          color: 'var(--text-muted)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          fontSize: '1rem',
-        }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
-          (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(124, 58, 237, 0.5)';
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)';
-          (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(124, 58, 237, 0.25)';
-        }}
-      >
+      <button onClick={onSkip} title="Skip" style={secondaryStyle}
+        onMouseEnter={onSecondaryEnter} onMouseLeave={onSecondaryLeave}>
         ⏭
       </button>
     </div>

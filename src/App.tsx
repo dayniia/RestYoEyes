@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTimer } from './hooks/useTimer';
 import { RingTimer } from './components/RingTimer';
 import { Controls } from './components/Controls';
@@ -10,6 +10,32 @@ type NotifPermission = NotificationPermission | 'unsupported';
 function App() {
   const timer = useTimer();
   const [notifPermission, setNotifPermission] = useState<NotifPermission>('default');
+
+  // Keep a ref to the latest action callbacks so the SW listener (registered once) never goes stale
+  const timerActionsRef = useRef({ skip: timer.skip, restartRest: timer.restartRest });
+  useEffect(() => {
+    timerActionsRef.current = { skip: timer.skip, restartRest: timer.restartRest };
+  }, [timer.skip, timer.restartRest]);
+
+  // Register service worker once
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(console.error);
+    }
+  }, []);
+
+  // Listen for notification action button clicks — registered once, uses ref for fresh callbacks
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type !== 'NOTIFICATION_ACTION') return;
+      const { action } = event.data;
+      if (action === 'skip') timerActionsRef.current.skip();
+      if (action === 'start_break') timerActionsRef.current.restartRest();
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  }, []); // only once — ref keeps callbacks fresh
 
   useEffect(() => {
     if (!('Notification' in window)) {
@@ -26,61 +52,50 @@ function App() {
     }
   };
 
-  const modeLabel = timer.mode === 'resting' ? 'Rest Your Eyes' : 'Stay Focused';
+  const modeLabel = timer.mode === 'resting' ? 'Rest a moment.' : 'Stay with it.';
 
   return (
     <div
       className="relative flex flex-col h-screen w-screen overflow-hidden"
-      style={{ background: 'var(--purple-deepest)' }}
+      style={{ background: 'var(--bg-base)' }}
     >
-      {/* Background blobs */}
-      <div className="blob blob-1" />
-      <div className="blob blob-2" />
-      <div className="blob blob-3" />
+      {/* Warm mist layers */}
+      <div className="mist mist-1" />
+      <div className="mist mist-2" />
 
-      {/* Top bar */}
       <StatusBar
         mode={timer.mode}
-        sessionCount={timer.sessionCount}
         totalRests={timer.totalRests}
-        notificationPermission={notifPermission}
       />
 
-      {/* Main content */}
       <main className="flex flex-1 flex-col items-center justify-center fade-in">
-        {/* Mode text */}
         <div className="text-center mb-8">
           <h1
             style={{
-              fontSize: '1.7rem',
+              fontSize: '1.55rem',
               fontWeight: 600,
-              letterSpacing: '-0.02em',
-              color: timer.mode === 'resting' ? 'var(--green-soft)' : 'var(--text-primary)',
-              transition: 'color 0.5s ease',
-              marginBottom: '0.3rem',
+              letterSpacing: '-0.01em',
+              color: timer.mode === 'resting' ? 'var(--accent-sand)' : 'var(--text-primary)',
+              transition: 'color 0.6s ease',
+              marginBottom: '0.25rem',
             }}
           >
             {modeLabel}
           </h1>
           <p
             style={{
-              fontSize: '0.85rem',
+              fontSize: '0.78rem',
               color: 'var(--text-muted)',
-              letterSpacing: '0.05em',
+              letterSpacing: '0.04em',
+              fontWeight: 300,
             }}
           >
-            {timer.mode === 'resting' ? 'Guided Eye Exercise' : 'Next break in'}
+            {timer.mode === 'resting' ? 'guided eye exercise' : 'next rest in'}
           </p>
         </div>
 
-        {/* Ring Timer */}
-        <RingTimer
-          progress={timer.progress}
-          mode={timer.mode}
-          secondsLeft={timer.secondsLeft}
-        />
+        <RingTimer progress={timer.progress} mode={timer.mode} secondsLeft={timer.secondsLeft} />
 
-        {/* Controls */}
         <Controls
           isRunning={timer.isRunning}
           onStart={handleStart}
@@ -89,43 +104,33 @@ function App() {
           onSkip={timer.skip}
         />
 
-        {/* Tip card */}
         <div
-          className="mt-10 mx-auto fade-in"
+          className="mt-10 mx-auto"
           style={{
-            maxWidth: 340,
-            background: 'rgba(30, 24, 64, 0.5)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(124, 58, 237, 0.15)',
-            borderRadius: '16px',
-            padding: '1rem 1.25rem',
+            maxWidth: 320,
+            background: 'rgba(37, 42, 43, 0.5)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid var(--border-faint)',
+            borderRadius: '14px',
+            padding: '0.9rem 1.1rem',
             textAlign: 'center',
           }}
         >
-          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.8, fontWeight: 300 }}>
             {timer.mode === 'resting'
-              ? `✨ Exercise: ${timer.currentExercise}`
-              : '💡 Every 20 min, look 20 feet away for 20 seconds to reduce eye strain.'}
+              ? timer.currentExercise
+              : 'Every 20 min, look far away for 20 seconds. Small habit, big relief.'}
           </p>
         </div>
 
-        {/* Notification denied warning */}
         {notifPermission === 'denied' && (
-          <p
-            className="mt-4 text-xs text-center"
-            style={{ color: '#f87171', opacity: 0.7, maxWidth: 300 }}
-          >
-            ⚠️ Notifications blocked. Allow them in your browser settings to get reminders.
+          <p className="mt-4 text-xs text-center" style={{ color: 'var(--text-muted)', opacity: 0.55, maxWidth: 280 }}>
+            — Notifications are blocked. Allow them in browser settings to get reminders.
           </p>
         )}
       </main>
 
-      {/* Rest overlay */}
-      <RestOverlay 
-        secondsLeft={timer.secondsLeft} 
-        mode={timer.mode} 
-        currentExercise={timer.currentExercise} 
-      />
+      <RestOverlay secondsLeft={timer.secondsLeft} mode={timer.mode} currentExercise={timer.currentExercise} />
     </div>
   );
 }

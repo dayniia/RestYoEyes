@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+/** Send a notification through the registered service worker so we can attach action buttons. */
+async function showSwNotification(title: string, body: string, tag: string, actions: { action: string; title: string }[]) {
+  if (!('serviceWorker' in navigator)) return;
+  const reg = await navigator.serviceWorker.ready;
+  reg.active?.postMessage({ type: 'SHOW_NOTIFICATION', title, body, tag, actions });
+}
+
 export type TimerMode = 'working' | 'resting';
 
 const WORK_DURATION = 20 * 60; // 20 minutes in seconds
@@ -29,6 +36,7 @@ export interface TimerState {
   pause: () => void;
   reset: () => void;
   skip: () => void;
+  restartRest: () => void;
 }
 
 export function useTimer(): TimerState {
@@ -37,8 +45,13 @@ export function useTimer(): TimerState {
   const [isRunning, setIsRunning] = useState(false);
   const [sessionCount, setSessionCount] = useState(0);
   const [totalRests, setTotalRests] = useState(() => {
-    const saved = localStorage.getItem('restyoeyes_total_rests');
-    return saved ? parseInt(saved, 10) : 0;
+    const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+    const saved = localStorage.getItem('restyoeyes_rests_data');
+    if (saved) {
+      const { date, count } = JSON.parse(saved);
+      if (date === today) return count as number;
+    }
+    return 0; // new day — start fresh
   });
   const [currentExercise, setCurrentExercise] = useState("");
   
@@ -47,9 +60,10 @@ export function useTimer(): TimerState {
   const totalDuration = mode === 'working' ? WORK_DURATION : REST_DURATION;
   const progress = secondsLeft / totalDuration;
 
-  // Persist total rests
+  // Persist today's rest count alongside today's date so it resets each day
   useEffect(() => {
-    localStorage.setItem('restyoeyes_total_rests', totalRests.toString());
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem('restyoeyes_rests_data', JSON.stringify({ date: today, count: totalRests }));
   }, [totalRests]);
 
   const switchToRest = useCallback(() => {
@@ -62,13 +76,17 @@ export function useTimer(): TimerState {
     const nextExercise = filteredExercises[Math.floor(Math.random() * filteredExercises.length)];
     setCurrentExercise(nextExercise);
 
-    // Fire browser notification
+    // Fire notification via service worker (enables action buttons)
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('👁️ Rest Your Eyes!', {
-        body: nextExercise,
-        icon: '/eye-icon.png',
-        silent: false,
-      });
+      showSwNotification(
+        'Rest a moment.',
+        nextExercise,
+        'restyoeyes-break',
+        [
+          { action: 'start_break', title: '✓ Starting break' },
+          { action: 'skip', title: 'Skip this one' },
+        ]
+      );
     }
   }, [currentExercise]);
 
@@ -129,6 +147,12 @@ export function useTimer(): TimerState {
     setSessionCount(0);
   }, []);
 
+  const restartRest = useCallback(() => {
+    // Called from notification "Starting break" — resets the 20s countdown
+    setSecondsLeft(REST_DURATION);
+    setIsRunning(true);
+  }, []);
+
   const skip = useCallback(() => {
     if (mode === 'working') {
       switchToRest();
@@ -150,6 +174,7 @@ export function useTimer(): TimerState {
     pause,
     reset,
     skip,
+    restartRest,
   };
 }
 
